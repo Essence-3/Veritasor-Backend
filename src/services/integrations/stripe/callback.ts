@@ -7,7 +7,7 @@
 import { consumeOAuthState } from './store.js'
 import { executeWithRetry } from '../clientWrapper.js'
 import { GlobalRetryBudgetExceededError } from '../retryBudget.js'
-import { IntegrationRepository } from '../../../repositories/IntegrationRepository.js'
+import * as integrationRepository from '../../../repositories/integration.js'
 
 export interface CallbackParams {
   code: string
@@ -154,19 +154,19 @@ export async function handleCallback(
     metadata: {}
   }
 
-  const existingIntegrations = (await IntegrationRepository.listByBusinessId(businessId)) || []
+  const existingIntegrations = await integrationRepository.listByBusinessId(businessId)
   const existingStripeIntegration = existingIntegrations.find((integration) =>
     integration.provider === 'stripe' && integration.externalId === stripeUserId
   )
 
 
   if (existingStripeIntegration) {
-    await IntegrationRepository.update(businessId, existingStripeIntegration.id, {
+    await integrationRepository.update(businessId, existingStripeIntegration.id, {
       token: integrationData.token,
       metadata: integrationData.metadata
     })
   } else {
-    await IntegrationRepository.create(integrationData)
+    await integrationRepository.create(integrationData)
   }
   
   return {
